@@ -1,6 +1,5 @@
 import robot
 from ultrasound_fast import UltrasoundRobot
-#from ultrasound import UltrasoundRobot
 import PF
 import PS
 import math
