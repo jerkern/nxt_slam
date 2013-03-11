@@ -167,18 +167,18 @@ class MyGUI(object):
         bounds = best.map.bounds
 
         for p in particles:
-            self.draw_part(p.robot.state[:2], bounds, other_color, 1)
+            self.draw_part(p.robot.get_state()[:2], bounds, other_color, 1)
         if (top_ind != None):
             p = particles[top_ind[0]]
-            self.draw_part(p.robot.state[:2], bounds, nb1_color, 2)
-            self.draw_part(p.robot.state[:2], bounds, best_color, 2, self.dim*numpy.array((4, 0)))
+            self.draw_part(p.robot.get_state()[:2], bounds, nb1_color, 2)
+            self.draw_part(p.robot.get_state()[:2], bounds, best_color, 2, self.dim*numpy.array((4, 0)))
 
         self.draw_part(m_slam[:2], bounds, grey, 4)
         self.draw_part(m_slam[:2], bounds, nb1_color, 3)
-        self.draw_part(dead_reckoning.state[:2], bounds, grey, 4)
-        self.draw_part(dead_reckoning.state[:2], bounds, bad_color, 3)
+        self.draw_part(dead_reckoning.get_state()[:2], bounds, grey, 4)
+        self.draw_part(dead_reckoning.get_state()[:2], bounds, bad_color, 3)
         #self.draw_part(best.robot.state[:2], bounds, grey, 3)
-        self.draw_part(best.robot.state[:2], bounds, best_color, 2)
+        self.draw_part(best.robot.get_state()[:2], bounds, best_color, 2)
         
 
 def calc_est(slam):
@@ -187,13 +187,13 @@ def calc_est(slam):
     v_slam = numpy.zeros((3,))
 
     for i in range(n_slam):
-        m_slam[:2] = m_slam[:2] + slam.w[i]*slam.part[i].robot.state[:2]
-        m_slam[2] = m_slam[2] + slam.w[i]*(numpy.mod(math.pi + slam.part[i].robot.state[2], 
+        m_slam[:2] = m_slam[:2] + slam.w[i]*slam.part[i].robot.robot.state[:2]
+        m_slam[2] = m_slam[2] + slam.w[i]*(numpy.mod(math.pi + slam.part[i].robot.robot.state[2], 
                                                       2*math.pi) - math.pi)
     m_slam = m_slam/sum(slam.w)
     for i in range(n_slam):
-        v_slam[:2] = v_slam[:2] + slam.w[i]*(slam.part[i].robot.state[:2]-m_slam[:2])**2
-        v_slam[2] = v_slam[2] + slam.w[i]*(numpy.mod(math.pi + slam.part[i].robot.state[2]-m_slam[2], 
+        v_slam[:2] = v_slam[:2] + slam.w[i]*(slam.part[i].robot.robot.state[:2]-m_slam[:2])**2
+        v_slam[2] = v_slam[2] + slam.w[i]*(numpy.mod(math.pi + slam.part[i].robot.robot.state[2]-m_slam[2], 
                                                       2*math.pi) - math.pi)**2
     v_slam = v_slam/sum(slam.w)
 
@@ -218,11 +218,11 @@ def output_stats(out_file, ref, slam, dumb):
                              
     # Ref (x,y,theta) dead-reckoning (x,y,theta) slam_avg (x,y,theta) slam_var (x,y,theta), slam_best (x,y,theta)
     
-    line  = "%f, %f, %f,    " % tuple(ref.robot.state)
+    line  = "%f, %f, %f,    " % tuple(ref.robot.robot.state)
     line += "%f, %f, %f,   " % tuple(dumb.state)
     line += "%f, %f, %f,   " % tuple(m_slam)
     line += "%f, %f, %f,   " % tuple(v_slam)
-    line += "%f, %f, %f\n"   % tuple(slam.part[best_ind].robot.state)
+    line += "%f, %f, %f\n"   % tuple(slam.part[best_ind].robot.robot.state)
 
     
     out_file.write(line)
@@ -435,8 +435,16 @@ while not no_more_data:
             print "\tmin_smooth_len: %d" % min_smooth_len
             print "\tnth_smoothing: %d" % nth_smoothing
             # Configure all variables/objects
+            dead_reckoning = robot.ExactDifferentialRobot(
+                                          l=wheel_base,d=wheel_size,
+                                          ticks=wheel_ticks,
+                                          state=(0.0, 0.0, old_angle))
             rob = robot.DifferentialRobot(l=wheel_base,d=wheel_size,
                                           ticks=wheel_ticks,
+                                          enc_noise=enc_noise,
+                                          enc_noise_lin=enc_noise_lin,
+                                          theta_noise=theta_noise,
+                                          theta_noise_lin=theta_noise_lin,
                                           state=(0.0, 0.0, old_angle))
             ubot = UltrasoundRobot(offset=offset,
                                    prec=beam_width,
@@ -448,14 +456,10 @@ while not no_more_data:
                                    r_coeff=r_coeff,
                                    unknown=unknown,
                                    decay=decay,
-                                   enc_noise=enc_noise,
-                                   enc_noise_lin=enc_noise_lin,
-                                   theta_noise=theta_noise,
-                                   theta_noise_lin=theta_noise_lin,
                                    prior=prior,
                                    num_angles=num_angles,
                                    detect_range=detect_range)
-            dead_reckoning = copy.deepcopy(rob)
+            
             pa = PF.ParticleApproximation(num=num_part, seed=ubot)
             pt = PF.ParticleTrajectory(pa, resample=pf_resample, lp_hack=lp_coeff)
             
@@ -469,7 +473,7 @@ while not no_more_data:
             x = float(words[1])
             y = float(words[2])
             theta = float(words[3])
-            ubot.robot.set_state(x,y,theta)
+            ubot.robot.set_pos(x,y,theta)
             # Ref position comes before measurements update, calculate rel. err after
             # receiving measurement.
         else:     

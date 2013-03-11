@@ -36,6 +36,11 @@ class UltrasoundRobot(part_utils.ParticleSmoothingBaseRB):
         self.set_sensor_angle(u[2])
         self.map.time_update()
 
+    def sample_input_noise(self, u):
+        wn = np.copy(u)
+        wn[:2,0] = self.robot.sample_input_noise(u[:2])
+        return wn
+
     def calc_fov(self, dist):
         # Add offset of sensor, offset is specified in local coordinate system,
         # rotate to match global coordinates
