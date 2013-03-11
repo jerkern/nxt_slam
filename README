@@ -1,0 +1,6 @@
+Perform Simultanous Localization and Mapping using Lego Mindstorm NXT.
+
+NXT code written using LEJOS.
+
+The rest of the code is written using Python/Scipy/Numpy and the pyParticleEst framework.
+
