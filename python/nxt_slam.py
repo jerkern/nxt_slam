@@ -15,7 +15,8 @@ class MyGUI(object):
     def __init__(self, ubot, use_gui):
 
         # Array dimensions
-        self.dim = numpy.shape(ubot.map.get_map(0))
+        self.dim = numpy.shape(ubot.map.get_nav_map()[0])
+        print self.dim
         self.dim = self.dim[::-1]
         self.num_angles = ubot.num_angles
 
@@ -23,7 +24,8 @@ class MyGUI(object):
         if (use_gui):
             """ Create gui object """
             pygame.display.init()
-            self.screen = pygame.display.set_mode( numpy.asarray((9, 4))*self.dim, 0, 32 )
+            #self.screen = pygame.display.set_mode( numpy.asarray((9, 4))*self.dim, 0, 32 )
+            self.screen = pygame.display.set_mode( numpy.asarray((8, 4))*self.dim, 0, 32 )
         else:
             self.screen = pygame.Surface(numpy.asarray((8, 4))*self.dim, 0, 32)
         self.palette = tuple([(i, i, i) for i in range(256)])
@@ -94,10 +96,11 @@ class MyGUI(object):
         """ Draw the k-th best particle maps """
         if (len(top) >= 1):
             self.draw_map(top[0].map, self.dim*numpy.array((4, 0)), self.best_scale)
-            if (self.use_gui):
-                for k in range(1,min(len(top),5)):
-                    self.draw_map(top[k].map, self.dim*numpy.array((8, (k-1)*self.num_angles)), (1, 1))
-            
+#            if (self.use_gui):
+#                for k in range(1,min(len(top),5)):
+#                    print k
+#                    self.draw_map(top[k].map, self.dim*numpy.array((8, (k-1))), (1, 1))
+#            
         return
     
     def draw_map(self, map, pos, scale):
@@ -114,22 +117,21 @@ class MyGUI(object):
 #        lprob *= (255.0/(lpmax-lpmin))
         comb = numpy.empty((prob.shape[1], prob.shape[0], 3))        
 
-
         # over-/underflow problems
         var[var < 0] = 0
-        var[var > 50] = 50
+        var[var > unknown] = unknown
         # arbitrary scaling to make it looks nice in the gui
-        prob[var >= 50] = 0.0
+        prob[var >= unknown] = 0.0
         #prob[prob > 0.1] = 0.1
         #prob = 10.0*prob
-        tmp = numpy.exp(-var.T*2.0)
+        tmp = numpy.exp(-var*2.0)
         #tmp = var.T
         #tmp[tmp > 255.0] = 255.0
         tmp2 = 0.0*prob
         tmp2[var >= 50] = 255.0
-        comb[:,:,0] = 255.0*prob.T
+        comb[:,:,0] = 255.0*prob
         comb[:,:,1] = 255.0*tmp
-        comb[:,:,2] = tmp2.T
+        comb[:,:,2] = tmp2
         #surf = pygame.surfarray.make_surface(lprob.T)
         surf = pygame.surfarray.make_surface(comb)
         surf = pygame.transform.scale(surf, numpy.asarray(scale)*numpy.asarray(surf.get_size()))
@@ -509,7 +511,7 @@ while not no_more_data:
                 if (stats_file != None):
                     output_stats(stats_file, ubot, pt[-1].pa, dead_reckoning)
     
-            best_ind = pt[-1].pa.find_best_particles(min(5, num_part))
+            best_ind = pt[-1].pa.find_best_particles(n=min(5, num_part))
             #gui.draw(pf.particles[best_ind[0]], pf.particles, best_ind[1:])
             if (use_gui or image_path):
                 (m_slam, v_slam) = calc_est(pt[-1].pa)

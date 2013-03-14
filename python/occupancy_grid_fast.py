@@ -23,6 +23,7 @@ class OccupancyGrid(object):
         self.shape = (numy, numx, num_angles)
         self.bounds = bounds
         self.resolution = resolution
+        self.unknown = unknown
         big_covar = unknown #1000.0
         small_covar = decay #10^-5
         p_occ = logodds(prior)
@@ -99,39 +100,16 @@ class OccupancyGrid(object):
     def smooth(self, z_next):
         self.kf.smooth(z_next.kf.x_new, z_next.kf.P)
     
-#    def calc_C(self, indices):
-#        nbr_y = numpy.size(indices,0)
-##        C = numpy.zeros((nbr_y, numpy.prod(self.shape)))
-##        for i in range(nbr_y):
-##            # Convert to linear indexing
-##            ind = indices[i, 1]*self.shape[0]+indices[i, 0]
-##            C_old[i,ind] = 1
-#        y = range(nbr_y)
-#        x = indices[:, 2]*self.shape[1]*self.shape[0] + indices[:, 1]*self.shape[0]+indices[:, 0]
-#        C_data = ((1,)*nbr_y, (y, x))
-#        C_shape = (nbr_y, numpy.prod(self.shape))
-#        C = sp.coo_matrix(C_data, shape=C_shape)
-#        return C.tocsr()
-
-    def get_map(self, axis=None):
-        # Return the mean of the estimates for each angle,
-        # Needs to convert to array first, matrix types seem
-        # to loose the single dimension during reshape
-        tmp = numpy.reshape(numpy.asarray(self.kf.x_new),
-                            self.shape, order='F')
-        #return inv_logodds(numpy.mean(tmp,2))
-        if (axis != None):
-            return inv_logodds(tmp[:,:,axis])
-        return inv_logodds(numpy.max(tmp,2))
-    
     def get_nav_map(self):
         
-        
         tmp_prob = numpy.reshape(numpy.asarray(self.kf.x_new),
-                                 (-1,self.shape[2]), order='C')
+                                 (-1,self.shape[2]), order='F')
         tmp_var = numpy.reshape(numpy.asarray(self.kf.P),
-                                (-1,self.shape[2]), order='C')
+                                (-1,self.shape[2]), order='F')
         
+        tmp_prob = numpy.copy(tmp_prob)
+        
+        tmp_prob[tmp_var >= self.unknown] = -numpy.Inf
         ind = numpy.argmax(tmp_prob,axis=1)
         
         tmp_prob = tmp_prob[numpy.arange(tmp_prob.shape[0]), ind]
@@ -140,18 +118,8 @@ class OccupancyGrid(object):
         tmp_prob = tmp_prob.reshape((self.shape[0],self.shape[1]))
         tmp_var = tmp_var.reshape((self.shape[0],self.shape[1]))
         
-        #ind = numpy.argmax(tmp_prob,axis=2)
         return (inv_logodds(tmp_prob), tmp_var)
     
-    def get_variance(self, axis=None):
-        tmp = self.kf.P
-        #tmp2 = sp.spdiags(tmp,0,tmp.size,tmp.size).tocsr()
-        tmp = numpy.reshape(numpy.asarray(tmp), self.shape, order='F')
-        if (axis != None):
-            return tmp[:,:,axis]
-        return numpy.mean(tmp,2)
-        #return numpy.min(tmp,2)
-
     def find_visible_cells(self, cone):
         """ Finds all cells centers of all grids within the cone specified
         state - (x,y,dir)
