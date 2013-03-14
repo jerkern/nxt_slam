@@ -486,29 +486,25 @@ while not no_more_data:
                 # Convert measurment scales
                 d = float(words[4])*dist_scale 
                 
-                ubot.update([0.0, 0.0, a, 0.0])
+                ubot.update([0.0, 0.0])
                 dead_reckoning.kinematic([wa, wb])
-                pt.update([wa, wb, a])
+                pt.update([wa, wb])
                 if ((not trunc_readings) or (d < trunc_readings)):
-                    ubot.measure(d)
-                    resampled = pt.measure(d)
+                    ubot.measure([a, d])
+                    resampled = pt.measure([a, d])
                     if (resampled):
                         resample_count += 1
                     
-                # We need to store this value since "update" messages don't contain it
-                old_angle = a
-    
                 if (stats_file != None):
                     output_stats(stats_file, ubot, pt[-1].pa, dead_reckoning)
                 
             if ((not no_more_data) and words[0].lower() == "update:".lower()):
                 wa = float(words[1])
                 wb = float(words[2])
-                ubot.update([0.0, 0.0, old_angle, 0.0])
+                ubot.update([0.0, 0.0])
                 dead_reckoning.kinematic([wa, wb])
                 
-                # update message doesn't contain angle, use old value
-                pt.update([wa, wb, old_angle])
+                pt.update([wa, wb])
                 
                 if (stats_file != None):
                     output_stats(stats_file, ubot, pt[-1].pa, dead_reckoning)

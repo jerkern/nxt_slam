@@ -99,19 +99,19 @@ class OccupancyGrid(object):
     def smooth(self, z_next):
         self.kf.smooth(z_next.kf.x_new, z_next.kf.P)
     
-    def calc_C(self, indices):
-        nbr_y = numpy.size(indices,0)
-#        C = numpy.zeros((nbr_y, numpy.prod(self.shape)))
-#        for i in range(nbr_y):
-#            # Convert to linear indexing
-#            ind = indices[i, 1]*self.shape[0]+indices[i, 0]
-#            C_old[i,ind] = 1
-        y = range(nbr_y)
-        x = indices[:, 2]*self.shape[1]*self.shape[0] + indices[:, 1]*self.shape[0]+indices[:, 0]
-        C_data = ((1,)*nbr_y, (y, x))
-        C_shape = (nbr_y, numpy.prod(self.shape))
-        C = sp.coo_matrix(C_data, shape=C_shape)
-        return C.tocsr()
+#    def calc_C(self, indices):
+#        nbr_y = numpy.size(indices,0)
+##        C = numpy.zeros((nbr_y, numpy.prod(self.shape)))
+##        for i in range(nbr_y):
+##            # Convert to linear indexing
+##            ind = indices[i, 1]*self.shape[0]+indices[i, 0]
+##            C_old[i,ind] = 1
+#        y = range(nbr_y)
+#        x = indices[:, 2]*self.shape[1]*self.shape[0] + indices[:, 1]*self.shape[0]+indices[:, 0]
+#        C_data = ((1,)*nbr_y, (y, x))
+#        C_shape = (nbr_y, numpy.prod(self.shape))
+#        C = sp.coo_matrix(C_data, shape=C_shape)
+#        return C.tocsr()
 
     def get_map(self, axis=None):
         # Return the mean of the estimates for each angle,

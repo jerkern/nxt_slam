@@ -32,33 +32,30 @@ class UltrasoundRobot(part_utils.ParticleSmoothingBaseRB):
         
     def update(self, u):
         """ Move robot according to kinematics """
-        self.robot.update(u[:2])
-        self.set_sensor_angle(u[2])
+        self.robot.update(u)
         self.map.time_update()
 
     def sample_input_noise(self, u):
-        wn = np.copy(u)
-        wn[:2,0] = self.robot.sample_input_noise(u[:2])
-        return wn
+        return self.robot.sample_input_noise(u)
 
     def calc_fov(self, dist):
         # Add offset of sensor, offset is specified in local coordinate system,
         # rotate to match global coordinates
-        state = self.robot.get_state()
-        theta = state[2]
+        pos = self.robot.get_pos()
+        theta = pos[2]
         rot_mat = np.array(((math.cos(theta), -math.sin(theta)),
                     (math.sin(theta), math.cos(theta))))
         
-        state[:2] = state[:2] + rot_mat.dot(self.offset[:2])
+        pos[:2] = pos[:2] + rot_mat.dot(self.offset[:2])
         
         # We can just add the angle, since unwrapping of
         # angles is handled inside FOVCone
-        state[2] = state[2] + self.offset[2]
+        pos[2] = pos[2] + self.offset[2]
         
         cell_diag = 1.44*self.map.resolution
                     
         # Limit max distance of updates
-        cone = sonar.FOVCone(state[:2], state[2], self.prec, min(dist+cell_diag, 15.0))
+        cone = sonar.FOVCone(pos[:2], pos[2], self.prec, min(dist+cell_diag, 15.0))
         # To improve performance we just extract which cells are within
         # the FOV once, and reause this both for measure and update.
         cells = self.map.find_visible_cells(cone)
@@ -107,7 +104,10 @@ class UltrasoundRobot(part_utils.ParticleSmoothingBaseRB):
         
         return cpart
 
-    def measure(self, dist):
+    def measure(self,y):
+        a = y[0]
+        dist = y[1]
+        self.set_sensor_angle(a)
         cells = self.calc_fov(dist)
         if (cells != None):
             prob = self.map.eval_measurement(cells, dist)
@@ -129,6 +129,9 @@ class UltrasoundRobot(part_utils.ParticleSmoothingBaseRB):
         return map
     
     def clin_measure(self, y):
+        a = y[0]
+        dist = y[1]
+        self.set_sensor_angle(a)
         cells = self.calc_fov(y)
         sm = self.convert_measurement(cells, y)
         map = copy.deepcopy(self.map)
@@ -147,7 +150,6 @@ class UltrasoundRobot(part_utils.ParticleSmoothingBaseRB):
 
     def set_nonlin_state(self, eta):
         self.robot.set_state(eta[0:7])
-        self.set_sensor_angle(eta[7])
     
     def set_lin_est(self, lest):
         self.map = lest
@@ -158,6 +160,5 @@ class UltrasoundRobot(part_utils.ParticleSmoothingBaseRB):
 class UltrasoundRobotCollapsed(object):
     """ Stores collapsed sample of MixedNLGaussian object """
     def __init__(self, parent):
-        self.eta = np.hstack(((parent.robot.get_state()).ravel(),
-                              parent.offset[2]))            
+        self.eta = parent.robot.get_state().ravel()            
         self.z = np.copy(parent.map.kf.x_new.ravel())
