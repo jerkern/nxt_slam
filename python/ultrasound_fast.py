@@ -37,6 +37,12 @@ class UltrasoundRobot(part_utils.ParticleSmoothingBaseRB):
 
     def sample_input_noise(self, u):
         return self.robot.sample_input_noise(u)
+    
+    def next_pdf(self, next_state, u):
+        return self.robot.next_pdf(next_state, u)
+    
+    def fwd_peak_density(self, u):
+        return self.robot.fwd_peak_density(u)
 
     def calc_fov(self, dist):
         # Add offset of sensor, offset is specified in local coordinate system,
@@ -132,8 +138,8 @@ class UltrasoundRobot(part_utils.ParticleSmoothingBaseRB):
         a = y[0]
         dist = y[1]
         self.set_sensor_angle(a)
-        cells = self.calc_fov(y)
-        sm = self.convert_measurement(cells, y)
+        cells = self.calc_fov(dist)
+        sm = self.convert_measurement(cells, dist)
         map = copy.deepcopy(self.map)
         if (sm):
             map(sm)

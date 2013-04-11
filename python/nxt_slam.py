@@ -536,7 +536,7 @@ while not no_more_data:
                                       dead_reckoning, m_slam)
                     
                 #st = PS.do_smoothing(pt,num_back_traj, callback=draw_smoothing_cb)
-                st = PS.do_smoothing(pt,num_back_traj, callback=None)
+                st = PS.do_smoothing(pt,num_back_traj)
                 t0 = st[0].t[smooth_ind]
                 pt = None # Release references to no longer needed memory
                 st = PS.do_rb_smoothing(st)
