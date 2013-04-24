@@ -120,9 +120,9 @@ class UltrasoundRobot(part_utils.ParticleSmoothingBaseRB):
             sm = self.convert_measurement(cells, dist)
             if (sm):
                 self.map(sm)
-            return prob
+            return math.log(prob)
         else:
-            return 0.0
+            return -np.Inf
     
     def collapse(self):
         """ Return a sample of the particle where the linear states
@@ -156,6 +156,9 @@ class UltrasoundRobot(part_utils.ParticleSmoothingBaseRB):
 
     def set_nonlin_state(self, eta):
         self.robot.set_state(eta[0:7])
+    
+    def get_nonlin_state(self):
+        return self.robot.get_state()
     
     def set_lin_est(self, lest):
         self.map = lest

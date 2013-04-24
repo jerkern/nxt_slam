@@ -7,7 +7,7 @@ import numpy
 #from matplotlib.pyplot import *
 import pygame
 import sys
-import copy
+#import copy
 #import matplotlib.pyplot
 
 class MyGUI(object):
@@ -25,7 +25,7 @@ class MyGUI(object):
             """ Create gui object """
             pygame.display.init()
             #self.screen = pygame.display.set_mode( numpy.asarray((9, 4))*self.dim, 0, 32 )
-            self.screen = pygame.display.set_mode( numpy.asarray((8, 4))*self.dim, 0, 32 )
+            self.screen = pygame.display.set_mode(numpy.asarray((8, 4))*self.dim, 0, 32 )
         else:
             self.screen = pygame.Surface(numpy.asarray((8, 4))*self.dim, 0, 32)
         self.palette = tuple([(i, i, i) for i in range(256)])
@@ -188,16 +188,18 @@ def calc_est(slam):
     m_slam = numpy.zeros((3,))
     v_slam = numpy.zeros((3,))
 
+    w = numpy.exp(slam.w)
+
     for i in range(n_slam):
-        m_slam[:2] = m_slam[:2] + slam.w[i]*slam.part[i].robot.robot.state[:2]
-        m_slam[2] = m_slam[2] + slam.w[i]*(numpy.mod(math.pi + slam.part[i].robot.robot.state[2], 
-                                                      2*math.pi) - math.pi)
-    m_slam = m_slam/sum(slam.w)
+        m_slam[:2] = m_slam[:2] + w[i]*slam.part[i].robot.robot.state[:2]
+        m_slam[2] = m_slam[2] + w[i]*(numpy.mod(math.pi + slam.part[i].robot.robot.state[2], 
+                                                2*math.pi) - math.pi)
+    m_slam = m_slam/sum(w)
     for i in range(n_slam):
-        v_slam[:2] = v_slam[:2] + slam.w[i]*(slam.part[i].robot.robot.state[:2]-m_slam[:2])**2
-        v_slam[2] = v_slam[2] + slam.w[i]*(numpy.mod(math.pi + slam.part[i].robot.robot.state[2]-m_slam[2], 
-                                                      2*math.pi) - math.pi)**2
-    v_slam = v_slam/sum(slam.w)
+        v_slam[:2] = v_slam[:2] + w[i]*(slam.part[i].robot.robot.state[:2]-m_slam[:2])**2
+        v_slam[2] = v_slam[2] + w[i]*(numpy.mod(math.pi + slam.part[i].robot.robot.state[2]-m_slam[2], 
+                                                2*math.pi) - math.pi)**2
+    v_slam = v_slam/sum(w)
 
     return (m_slam, v_slam)
     
